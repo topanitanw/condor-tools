@@ -1,0 +1,80 @@
+#!/bin/bash -e
+
+function usage {
+    echo "This script creates an interactive shell environment through condor."
+    echo "  USAGE: condor_shell [OPTIONS]"
+}
+
+function flags {
+    echo "  FLAGS:"
+    echo "    --machine MACHINE"
+    echo "      Specify a machine to run on."
+    echo "    -w,--whole|--whole-machine"
+    echo "      Specify if you want to run a whole machine job"
+}
+
+# Default values.
+MACHINE="n"
+WHOLE_MACHINE="n"
+
+while [[ $# -gt 0 ]] ;
+do
+    case $1 in
+        --machine)
+            MACHINE="${2}"
+            shift
+            shift
+            ;;
+        -w|--whole|--whole-machine)
+            WHOLE_MACHINE="y"
+            shift
+            ;;
+        -h|--help)
+            usage
+            flags
+            exit 0
+            ;;
+        -*|--*)
+            PASS_NAME=$(echo "$1" | sed 's/^-*//')
+            PASSES+=("${PASS_NAME}")
+            shift
+            ;;
+        *)
+            echo "Too many positional arguments passed!"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+TMP_CONDOR=$(mktemp)
+
+echo "Universe = vanilla" >> ${TMP_CONDOR}
+
+if [[ "${MACHINE}" == "n" ]] ; then
+    echo "Requirements = " >> ${TMP_CONDOR}
+else
+    echo "Zythos = ${MACHINE}" >> ${TMP_CONDOR}
+    echo "Requirements = ((Machine == \"\$(Zythos).cs.northwestern.edu\"))" >> ${TMP_CONDOR}
+fi
+
+echo "Rank = TARGET.Mips" >> ${TMP_CONDOR}
+echo "Getenv = True" >> ${TMP_CONDOR}
+
+if [[ "${WHOLE_MACHINE}" == "n" ]] ; then
+    echo "+IsWholeMachineJob = false" >> ${TMP_CONDOR}
+else
+    echo "+IsWholeMachineJob = true" >> ${TMP_CONDOR}
+fi
+
+echo "+IsSuspensionJob = false" >> ${TMP_CONDOR}
+
+echo "priority = 0" >> ${TMP_CONDOR}
+
+echo "queue" >> ${TMP_CONDOR}
+
+cat ${TMP_CONDOR}
+
+condor_submit -i ${TMP_CONDOR}
+
+rm ${TMP_CONDOR}
