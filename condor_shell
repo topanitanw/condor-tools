@@ -73,7 +73,9 @@ echo "priority = 0" >> ${TMP_CONDOR}
 
 echo "queue" >> ${TMP_CONDOR}
 
+echo "Condor file: ${TMP_CONDOR}"
 cat ${TMP_CONDOR}
+echo ""
 
 condor_submit -i ${TMP_CONDOR}
 
