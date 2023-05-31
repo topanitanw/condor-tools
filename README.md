@@ -25,11 +25,15 @@ These can also be combined:
 condor_shell --machine allagash --whole
 ```
 
+
 By default, `condor_shell` will start the condor job in the same directory it is executed from.
+
 You can specify the directory you'd like to start in instead:
 ```
-condor_shell -C DIR
+condor_shell -C /home/me/my_dir
+condor_shell -C ../other_dir
 ```
+
 Or you can be placed in the usual condor limbo:
 ```
 condor_shell --nwd
