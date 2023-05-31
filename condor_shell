@@ -11,11 +11,16 @@ function flags {
     echo "      Specify a machine to run on."
     echo "    -w,--whole|--whole-machine"
     echo "      Specify if you want to run a whole machine job"
+    echo "    -C,--change-dir DIR"
+    echo "      Start the job in the directory specified by DIR"
+    echo "    --nwd"
+    echo "      Don't start the job in the same directory that condor_shell is run from"
 }
 
 # Default values.
 MACHINE="n"
 WHOLE_MACHINE="n"
+INITIAL_DIR="$(pwd)"
 
 while [[ $# -gt 0 ]] ;
 do
@@ -33,6 +38,15 @@ do
             usage
             flags
             exit 0
+            ;;
+        -C|--change-dir)
+            INITIAL_DIR="$(realpath ${2})"
+            shift
+            shift
+            ;;
+        --nwd)
+            INITIAL_DIR="n"
+            shift
             ;;
         -*|--*)
             PASS_NAME=$(echo "$1" | sed 's/^-*//')
@@ -68,6 +82,11 @@ else
 fi
 
 echo "+IsSuspensionJob = false" >> ${TMP_CONDOR}
+
+if [[ "${INITIAL_DIR}" != "n" ]] ; then
+    echo "InitialDir = ${INITIAL_DIR}" >> ${TMP_CONDOR}
+    echo "Remote_InitialDir = ${INITIAL_DIR}" >> ${TMP_CONDOR}
+fi
 
 echo "priority = 0" >> ${TMP_CONDOR}
 
