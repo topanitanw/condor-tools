@@ -38,3 +38,16 @@ Or you can be placed in the usual condor limbo:
 ```
 condor_shell --nwd
 ```
+
+### `condor_usage`
+Query machines currently in use and their users.
+
+With no arguments, this will give you information about all running jobs (and their user).
+```
+condor_usage
+```
+
+Or, you can specify the machine you want to inspect:
+```
+condor_usage --machine allagash
+```
