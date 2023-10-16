@@ -2,13 +2,12 @@
 
 function usage {
     echo "This script prints the current machines in use, and who is using them."
-    echo "  USAGE: condor_shell [--machine MACHINE]"
+    echo "  USAGE: condor_shell [--machine MACHINE | --summary]"
 }
 
 # Default values.
-MACHINE="n"
-WHOLE_MACHINE="n"
-INITIAL_DIR="$(pwd)"
+MACHINE=""
+SUMMARY=""
 
 while [[ $# -gt 0 ]] ;
 do
@@ -16,6 +15,10 @@ do
         --machine)
             MACHINE="${2}"
             shift
+            shift
+            ;;
+        --summary)
+            SUMMARY="y"
             shift
             ;;
         -h|--help)
@@ -30,9 +33,33 @@ do
     esac
 done
 
+function get_output() {
+    # The order of these clauses matches the order in condor's output.
+    condor_q -all -l | awk '/^ClusterId = /{jobid = $3;}\
+                            /^IsWholeMachineJob = /{wholemachine = ($3 == "true");}\
+                            /^JobStatus = /{running = ($3 == "2");}\
+                            /^RemoteHost = /{if (running) {slot = $3;}}\
+                            /^User = /{if (running) {printf "\033[1;37m%s\033[0m  \tin use by \033[1;33m%s\033[0m\tjob: %s.0\tWholeMachine: %s\n",slot,$3,jobid,wholemachine;}}'
+}
 
-if [ -z ${MACHINE+x} ] ; then
-    condor_q -all -l | awk '/^RemoteHost = /{printf "\033[1;37m%s\033[0m\t",$3; x=1}x&&/^User = /{printf "in use by \033[1;33m%s\033[0m\n",$3; x=0}'
+if [ -z "$SUMMARY" ]; then
+    get_output
 else
-    condor_q -all -l | awk '/^RemoteHost = .*'"${MACHINE}"'/{printf "\033[1;37m%s\033[0m\t",$3; x=1}x&&/^User = /{printf "in use by \033[1;33m%s\033[0m\n",$3; x=0}'
+    get_output | \
+        awk 'BEGIN {OFS=", "} \
+             { split($1, arr, "@"); \
+               resource = substr(arr[2], 0, length(arr[2]) - 5); \
+               split($5, arr, "@"); \
+               user = substr(arr[1], 9, length(arr[1])); \
+	       if ($9 == "1") { \
+	       	  user = user " (whole machine)"; \
+	       } \
+               key = resource "@" user; \
+               if (!(key in unique)) { \
+                  users[resource] = (users[resource] ? users[resource] OFS : "") user; \
+                  unique[key]++; \
+               } \
+             } \
+             END { for (r in users) print r "  \tin use by " users[r]; }'
 fi
+
