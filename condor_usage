@@ -2,7 +2,7 @@
 
 function usage {
     echo "This script prints the current machines in use, and who is using them."
-    echo "  USAGE: condor_usage [--machine MACHINE | --summary]"
+    echo "  USAGE: condor_usage [<--machine MACHINE> | <--summary,-s>]"
 }
 
 # Default values.
@@ -17,7 +17,7 @@ do
             shift
             shift
             ;;
-        --summary)
+        -s|--summary)
             SUMMARY="y"
             shift
             ;;
